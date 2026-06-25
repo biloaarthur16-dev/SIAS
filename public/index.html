@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestion - Organisme de Sécurité Sociale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <!-- ===================== ECRAN DE CONNEXION ===================== -->
+    <section id="login-view" class="login-view">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="logo-badge">SS</div>
+          <div>
+            <h1>Sécurité Sociale</h1>
+            <p>Plateforme de gestion des assurés &amp; remboursements</p>
+          </div>
+        </div>
+
+        <form id="login-form" class="login-form" autocomplete="off">
+          <h2>Connexion</h2>
+          <p class="login-sub">Accédez à votre espace de travail</p>
+
+          <label for="login-input">Identifiant</label>
+          <input id="login-input" name="login" type="text" placeholder="ex : admin" required />
+
+          <label for="password-input">Mot de passe</label>
+          <input
+            id="password-input"
+            name="password"
+            type="password"
+            placeholder="Votre mot de passe"
+            required
+          />
+
+          <div id="login-error" class="form-error" hidden></div>
+
+          <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+
+          <div class="login-hint">
+            <strong>Comptes de démonstration</strong>
+            <span>Assureur (Saha) : <code>admin</code> / <code>admin123</code></span>
+            <span>Médecin généraliste (Owen) : <code>owen</code> / <code>med123</code></span>
+            <span>Médecin spécialiste (Nzoyem) : <code>nzoyem</code> / <code>med123</code></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Panneau decoratif : voir styles.css pour y placer une image de fond -->
+      <div class="login-aside">
+        <div class="login-aside-content">
+          <h2>Une prise en charge<br />simple et traçable</h2>
+          <ul>
+            <li>Inscription des assurés et des médecins</li>
+            <li>Feuilles de maladie &amp; consultations</li>
+            <li>Remboursements automatisés (100% / 80% / 30%)</li>
+            <li>Factures et registre des dépenses</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== APPLICATION ===================== -->
+    <section id="app-view" class="app-view" hidden>
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="logo-badge">SS</div>
+          <span>Sécurité Sociale</span>
+        </div>
+        <nav id="main-nav" class="main-nav"></nav>
+        <div class="sidebar-footer">
+          <div id="user-card" class="user-card"></div>
+          <button id="change-pwd-btn" class="btn btn-ghost btn-block" style="margin-bottom:8px">Modifier mot de passe</button>
+          <button id="logout-btn" class="btn btn-ghost btn-block">Se déconnecter</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <h2 id="page-title">Tableau de bord</h2>
+            <p id="page-subtitle" class="page-subtitle"></p>
+          </div>
+          <div id="role-badge" class="role-badge"></div>
+        </header>
+        <div id="page-content" class="page-content"></div>
+      </main>
+    </section>
+
+    <!-- Modale generique -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="modal-title">Titre</h3>
+          <button id="modal-close" class="modal-close" aria-label="Fermer">&times;</button>
+        </div>
+        <div id="modal-body" class="modal-body"></div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/js/api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/app.js"></script>
+  </body>
+</html>
