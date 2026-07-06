@@ -1,76 +1,81 @@
 import express from "express";
-import { table, nextId, save, findById } from "../db.js";
+import { all, get, insert, update, remove, nextId } from "../store.js";
 import { auth, requireRole, enrichAssure } from "../utils.js";
 
 const router = express.Router();
 
-router.get("/", auth, (req, res) => {
-  res.json(table("assures").map(enrichAssure));
+router.get("/", auth, async (req, res, next) => {
+  try {
+    const list = await all("assures");
+    res.json(await Promise.all(list.map(enrichAssure)));
+  } catch (err) { next(err); }
 });
 
-router.get("/:id", auth, (req, res) => {
-  const a = findById("assures", req.params.id);
-  if (!a) return res.status(404).json({ error: "Assure introuvable." });
-  res.json(enrichAssure(a));
+router.get("/:id", auth, async (req, res, next) => {
+  try {
+    const a = await get("assures", req.params.id);
+    if (!a) return res.status(404).json({ error: "Assure introuvable." });
+    res.json(await enrichAssure(a));
+  } catch (err) { next(err); }
 });
 
-router.post("/", auth, requireRole("ASSUREUR"), (req, res) => {
-  const { nom, prenom, age, email, tel, profession, groupeSanguin, allergies } = req.body || {};
-  if (!nom || !prenom || !email)
-    return res.status(400).json({ error: "Nom, prenom et email sont obligatoires." });
+router.post("/", auth, requireRole("ASSUREUR"), async (req, res, next) => {
+  try {
+    const { nom, prenom, age, email, tel, profession, groupeSanguin, allergies } = req.body || {};
+    if (!nom || !prenom || !email)
+      return res.status(400).json({ error: "Nom, prenom et email sont obligatoires." });
 
-  const exists = table("assures").some(
-    (a) => a.email.toLowerCase() === String(email).toLowerCase()
-  );
-  if (exists) return res.status(409).json({ error: "Cet assure existe deja (email)." });
+    const assures = await all("assures");
+    const exists = assures.some((a) => (a.email || "").toLowerCase() === String(email).toLowerCase());
+    if (exists) return res.status(409).json({ error: "Cet assure existe deja (email)." });
 
-  const assure = {
-    id: nextId("ASS"),
-    role: "ASSURE",
-    nom,
-    prenom,
-    age: age ? Number(age) : null,
-    email,
-    tel: tel || "",
-    profession: profession || "",
-    groupeSanguin: groupeSanguin || "",
-    allergies: allergies || "",
-    medecinTraitantId: null,
-  };
-  table("assures").push(assure);
-  save();
-  res.status(201).json(enrichAssure(assure));
-});
-
-router.delete("/:id", auth, requireRole("ASSUREUR"), (req, res) => {
-  const t = table("assures");
-  const idx = t.findIndex(a => a.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Assure introuvable." });
-
-  const hasConsultations = table("consultations").some(c => c.assureId === req.params.id);
-  const hasFeuilles = table("feuilles").some(f => f.assureId === req.params.id);
-  if (hasConsultations || hasFeuilles) {
-    return res.status(409).json({
-      error: "Impossible de supprimer : cet assure a des consultations ou des feuilles de maladie enregistrees."
+    const assure = await insert("assures", {
+      id: await nextId("ASS"),
+      role: "ASSURE",
+      nom, prenom,
+      age: age ? Number(age) : null,
+      email,
+      tel: tel || "",
+      profession: profession || "",
+      groupeSanguin: groupeSanguin || "",
+      allergies: allergies || "",
+      medecinTraitantId: null,
     });
-  }
-
-  t.splice(idx, 1);
-  save();
-  res.json({ ok: true });
+    res.status(201).json(await enrichAssure(assure));
+  } catch (err) { next(err); }
 });
 
-router.put("/:id/medecin-traitant", auth, requireRole("ASSUREUR"), (req, res) => {
-  const assure = findById("assures", req.params.id);
-  if (!assure) return res.status(404).json({ error: "Assure introuvable." });
-  const { medecinId } = req.body || {};
-  const medecin = findById("medecins", medecinId);
-  if (!medecin) return res.status(404).json({ error: "Medecin introuvable." });
+router.delete("/:id", auth, requireRole("ASSUREUR"), async (req, res, next) => {
+  try {
+    const a = await get("assures", req.params.id);
+    if (!a) return res.status(404).json({ error: "Assure introuvable." });
 
-  const deja = !!assure.medecinTraitantId;
-  assure.medecinTraitantId = medecinId;
-  save();
-  res.json({ ...enrichAssure(assure), miseAJour: deja });
+    const [consultations, feuilles] = await Promise.all([all("consultations"), all("feuilles")]);
+    const hasConsultations = consultations.some((c) => c.assureId === req.params.id);
+    const hasFeuilles = feuilles.some((f) => f.assureId === req.params.id);
+    if (hasConsultations || hasFeuilles) {
+      return res.status(409).json({
+        error: "Impossible de supprimer : cet assure a des consultations ou des feuilles de maladie enregistrees.",
+      });
+    }
+
+    await remove("assures", req.params.id);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+router.put("/:id/medecin-traitant", auth, requireRole("ASSUREUR"), async (req, res, next) => {
+  try {
+    const assure = await get("assures", req.params.id);
+    if (!assure) return res.status(404).json({ error: "Assure introuvable." });
+    const { medecinId } = req.body || {};
+    const medecin = await get("medecins", medecinId);
+    if (!medecin) return res.status(404).json({ error: "Medecin introuvable." });
+
+    const deja = !!assure.medecinTraitantId;
+    const updated = await update("assures", req.params.id, { medecinTraitantId: medecinId });
+    res.json({ ...(await enrichAssure(updated)), miseAJour: deja });
+  } catch (err) { next(err); }
 });
 
 export default router;

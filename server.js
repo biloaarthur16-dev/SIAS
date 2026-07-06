@@ -5,8 +5,8 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import fs from "node:fs";
 import api from "./src/api.js";
+import { ensureReady, resetDb } from "./src/store.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +25,17 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+// Gestion centralisee des erreurs (les routes appellent next(err)).
+app.use((err, req, res, next) => {
+  console.error("[api] erreur:", err.message);
+  res.status(500).json({ error: "Erreur serveur." });
+});
+
+// Prepare la base (schema + seed) avant d'accepter des requetes.
+// SEED_RESET=1 (tests) repart d'une base propre a chaque demarrage.
+if (process.env.SEED_RESET === "1") await resetDb();
+else await ensureReady();
 
 const server = app.listen(PORT, () => {
   console.log("==================================================");

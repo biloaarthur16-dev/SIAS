@@ -4,23 +4,24 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import fs from "node:fs";
-import os from "node:os";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..", "..");
 
+// Test database (isolated from the app DB). SEED_RESET=1 gives each server boot
+// a clean, freshly-seeded schema. API test files run serially
+// (--test-concurrency=1) so they never share this DB at the same time.
+const TEST_DB_URL =
+  process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@127.0.0.1:5432/sias_test";
+
 let portCursor = 3200 + Math.floor(Math.random() * 300);
 
-/** Boot an isolated server instance. Returns { baseURL, api, close }. */
+/** Boot a server instance against a freshly-reset test database. */
 export async function startServer() {
   const port = portCursor++;
-  const dbFile = path.join(os.tmpdir(), `sias-test-${port}-${Date.now()}.json`);
-  if (fs.existsSync(dbFile)) fs.rmSync(dbFile);
-
   const child = spawn("node", ["server.js"], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(port), DB_FILE: dbFile },
+    env: { ...process.env, PORT: String(port), DATABASE_URL: TEST_DB_URL, SEED_RESET: "1" },
     stdio: ["ignore", "ignore", "inherit"],
   });
 
@@ -29,10 +30,7 @@ export async function startServer() {
 
   const close = () =>
     new Promise((resolve) => {
-      child.on("exit", () => {
-        if (fs.existsSync(dbFile)) fs.rmSync(dbFile);
-        resolve();
-      });
+      child.on("exit", () => resolve());
       child.kill("SIGKILL");
     });
 

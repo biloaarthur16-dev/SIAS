@@ -6,12 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "stop": "node scripts/stop.js || true",
-    "test:api": "node --test \"tests/api/**/*.test.js\"",
+    "test:api": "node --test --test-concurrency=1 \"tests/api/**/*.test.js\"",
     "test:e2e": "playwright test",
     "test": "npm run test:api && npm run test:e2e"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@hugeicons/core-free-icons": "^4.2.2",
