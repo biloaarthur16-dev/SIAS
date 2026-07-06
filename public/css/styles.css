@@ -127,19 +127,6 @@ code {
   box-shadow: 0 0 0 4px var(--cyan-soft);
 }
 .login-form .btn { margin-top: 22px; padding: 13px; }
-.login-hint {
-  margin-top: 26px;
-  padding: 16px;
-  background: var(--bg);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.login-hint strong { color: var(--ink); margin-bottom: 4px; }
 
 .login-aside {
   position: relative;
