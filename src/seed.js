@@ -2,6 +2,10 @@
 // Donnees initiales : permettent de demontrer l'application immediatement.
 // (Mots de passe en clair volontairement, contexte pedagogique.)
 // ---------------------------------------------------------------------------
+// seedRows() est utilise par la couche Postgres (src/store.js) ;
+// buildSeed() reste l'alias historique. Meme donnees de demonstration.
+export { buildSeed as seedRows };
+
 export function buildSeed() {
   return {
     counters: { ASR: 1, MED: 2, ASS: 5, CONS: 1, FM: 0, PRESC: 0, REMB: 0, SPEC: 9 },

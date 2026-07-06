@@ -1,0 +1,22 @@
+{
+  "name": "sias",
+  "version": "1.0.0",
+  "description": "Gestion d'un organisme de securite sociale (projet CSI)",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "stop": "node scripts/stop.js || true",
+    "test:api": "node --test --test-concurrency=1 \"tests/api/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "test": "npm run test:api && npm run test:e2e"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@hugeicons/core-free-icons": "^4.2.2",
+    "@hugeicons/react": "^1.1.9",
+    "@playwright/test": "^1.48.0"
+  }
+}

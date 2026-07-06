@@ -1,14 +1,15 @@
 import crypto from "node:crypto";
-import { table, findById, getSessions } from "./db.js";
+import { all, get, feuilleEtats } from "./store.js";
+import { getSession } from "./sessions.js";
 
 export const hashPwd = (p) => crypto.createHash("sha256").update(p).digest("hex");
 
-export function findUserByLogin(login) {
-  return (
-    table("assureurs").find((u) => u.login === login) ||
-    table("medecins").find((u) => u.login === login) ||
-    null
-  );
+export async function findUserByLogin(login) {
+  const assureurs = await all("assureurs");
+  const found = assureurs.find((u) => u.login === login);
+  if (found) return found;
+  const medecins = await all("medecins");
+  return medecins.find((u) => u.login === login) || null;
 }
 
 export function publicUser(u) {
@@ -17,14 +18,23 @@ export function publicUser(u) {
   return rest;
 }
 
-export function auth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  const sessions = getSessions();
-  const session = token ? sessions[token] : null;
-  if (!session) return res.status(401).json({ error: "Authentification requise." });
-  req.user = session;
-  next();
+export async function auth(req, res, next) {
+  try {
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const session = token ? getSession(token) : null;
+    if (!session) return res.status(401).json({ error: "Authentification requise." });
+    // CU 11 : bloque une session ouverte si le medecin a ete desactive entre-temps.
+    if (session.role === "MEDECIN") {
+      const med = await get("medecins", session.id);
+      if (med && med.etat === "Désactivé")
+        return res.status(403).json({ error: "Compte desactive : acces refuse." });
+    }
+    req.user = session;
+    next();
+  } catch (err) {
+    next(err);
+  }
 }
 
 export function requireRole(...roles) {
@@ -39,26 +49,34 @@ export function personLabel(p) {
   return p ? `${p.prenom || ""} ${p.nom || ""}`.trim() : "(inconnu)";
 }
 
-export function enrichAssure(a) {
+export async function enrichAssure(a) {
   if (!a) return null;
-  const med = a.medecinTraitantId ? findById("medecins", a.medecinTraitantId) : null;
+  const med = a.medecinTraitantId ? await get("medecins", a.medecinTraitantId) : null;
   return { ...a, medecinTraitant: med ? personLabel(med) : null };
 }
 
-export function enrichConsultation(c) {
-  return {
-    ...c,
-    assure: personLabel(findById("assures", c.assureId)),
-    medecin: personLabel(findById("medecins", c.medecinId)),
-  };
+export async function enrichConsultation(c) {
+  const [assure, medecin] = await Promise.all([
+    get("assures", c.assureId),
+    get("medecins", c.medecinId),
+  ]);
+  return { ...c, assure: personLabel(assure), medecin: personLabel(medecin) };
 }
 
-export function enrichFeuille(f) {
-  const med = findById("medecins", f.medecinId);
-  const remb = table("remboursements").find((r) => r.feuilleId === f.id);
+export async function enrichFeuille(f) {
+  const [med, remboursements] = await Promise.all([
+    get("medecins", f.medecinId),
+    all("remboursements"),
+  ]);
+  const [assure, historiqueEtats] = await Promise.all([
+    get("assures", f.assureId),
+    feuilleEtats(f.id),
+  ]);
+  const remb = remboursements.find((r) => r.feuilleId === f.id);
   return {
     ...f,
-    assure: personLabel(findById("assures", f.assureId)),
+    historiqueEtats,
+    assure: personLabel(assure),
     medecin: personLabel(med),
     medecinType: med ? med.type : null,
     rembourse: !!remb,

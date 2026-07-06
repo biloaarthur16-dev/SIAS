@@ -101,7 +101,7 @@ code {
 .logo-badge {
   width: 46px; height: 46px;
   display: grid; place-items: center;
-  background: linear-gradient(135deg, var(--navy), var(--cyan));
+  background: var(--navy);
   color: #fff;
   border-radius: 12px;
   font-family: var(--font-display);
@@ -127,25 +127,12 @@ code {
   box-shadow: 0 0 0 4px var(--cyan-soft);
 }
 .login-form .btn { margin-top: 22px; padding: 13px; }
-.login-hint {
-  margin-top: 26px;
-  padding: 16px;
-  background: var(--bg);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.login-hint strong { color: var(--ink); margin-bottom: 4px; }
 
 .login-aside {
   position: relative;
-  /* >>> IMAGE DE FOND : remplacez le degrade ci-dessous par votre image <<<
+  /* >>> IMAGE DE FOND : remplacez la couleur ci-dessous par votre image <<<
      ex : background: url("/assets/login-bg.jpg") center/cover no-repeat; */
-  background: linear-gradient(150deg, var(--navy) 0%, var(--navy-dark) 55%, #0a1f3d 100%);
+  background: var(--navy-dark);
   color: #fff;
   display: flex;
   align-items: center;
@@ -156,7 +143,7 @@ code {
   content: "";
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 169, 214, 0.45), transparent 70%);
+  background: rgba(0, 169, 214, 0.14);
 }
 .login-aside::before { width: 380px; height: 380px; top: -90px; right: -90px; }
 .login-aside::after { width: 320px; height: 320px; bottom: -110px; left: -80px; opacity: 0.6; }
@@ -207,7 +194,7 @@ code {
 }
 .nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 .nav-item.active { background: rgba(255, 255, 255, 0.14); color: #fff; }
-.nav-item .nav-ico { font-size: 1.05rem; width: 20px; text-align: center; }
+.nav-item .nav-ico { width: 20px; display: grid; place-items: center; }
 
 .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 16px; }
 .user-card { margin-bottom: 12px; }
@@ -246,9 +233,22 @@ code {
   padding: 20px;
   box-shadow: var(--shadow);
 }
+.stat-card .stat-ico {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: var(--cyan-soft);
+  color: var(--navy);
+  margin-bottom: 12px;
+}
 .stat-card .label { color: var(--muted); font-size: 0.82rem; font-weight: 500; }
 .stat-card .value { font-family: var(--font-display); font-size: 2rem; font-weight: 800; color: var(--navy); margin-top: 6px; }
 .stat-card .sub { font-size: 0.78rem; color: var(--green); margin-top: 4px; }
+
+/* ------------------------------- Icones --------------------------------- */
+.ico { display: inline-block; vertical-align: -0.18em; flex: none; }
+.nav-item .nav-ico .ico, .btn .ico { vertical-align: middle; }
+.empty .big .ico { color: var(--muted); }
 
 /* ----------------------------- Panneaux --------------------------------- */
 .panel {

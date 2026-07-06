@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes.js";
 import assuresRoutes from "./routes/assures.routes.js";
 import medecinsRoutes from "./routes/medecins.routes.js";
 import consultationsRoutes from "./routes/consultations.routes.js";
+import prescriptionsRoutes from "./routes/prescriptions.routes.js";
 import financesRoutes from "./routes/finances.routes.js";
 import systemRoutes from "./routes/system.routes.js";
 
@@ -15,9 +16,9 @@ router.use("/auth", authRoutes);
 router.use("/assures", assuresRoutes);
 router.use("/medecins", medecinsRoutes);
 router.use("/consultations", consultationsRoutes);
-router.use("/prescriptions", consultationsRoutes); // Les prescriptions sont gérées avec les consultations
-router.use("/feuilles", financesRoutes);
-router.use("/remboursements", financesRoutes);
+router.use("/prescriptions", prescriptionsRoutes);
+// financesRoutes definit deja ses chemins /feuilles* et /remboursements* : monte a la racine.
+router.use("/", financesRoutes);
 
 // Montage des routes système directement à la racine de l'API (/api/stats, /api/specialites)
 router.use("/", systemRoutes);
