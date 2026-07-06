@@ -9,7 +9,8 @@ import { buildSeed } from "./seed.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "data");
-const DB_FILE = path.join(DATA_DIR, "db.json");
+// ponytail: DB_FILE env override lets e2e tests use a throwaway file instead of data/db.json
+const DB_FILE = process.env.DB_FILE || path.join(DATA_DIR, "db.json");
 
 let data = null;
 

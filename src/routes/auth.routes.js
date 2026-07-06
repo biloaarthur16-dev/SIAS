@@ -38,6 +38,11 @@ router.post("/login", (req, res) => {
     });
   }
 
+  // CU 11 : un medecin desactive ne peut plus exercer -> acces refuse.
+  if (user.role === "MEDECIN" && user.etat === "Désactivé") {
+    return res.status(403).json({ error: "Compte desactive : acces refuse." });
+  }
+
   loginAttempts.delete(login);
   const token = crypto.randomUUID();
   const session = { id: user.id, role: user.role, nom: user.nom, prenom: user.prenom };

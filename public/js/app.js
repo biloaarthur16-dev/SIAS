@@ -410,8 +410,14 @@ Pages.medecins = async () => {
       <td>${m.specialite ? esc(m.specialite) : '<span class="cell-muted">Médecine générale</span>'}</td>
       <td>${esc(m.email || "-")}<div class="cell-muted">${esc(m.tel || "")}</div></td>
       ${can("ASSUREUR") ? `<td><code>${esc(m.login)}</code></td>` : ""}
-      <td><span class="badge badge-green">${esc(m.etat || "Actif")}</span></td>
-      ${can("ASSUREUR") ? `<td><div class="row-actions"><button class="btn btn-danger btn-sm" data-act="delete-medecin" data-id="${m.id}">🗑</button></div></td>` : ""}
+      <td>${(m.etat === "Désactivé")
+        ? '<span class="badge badge-grey">Désactivé</span>'
+        : '<span class="badge badge-green">Actif</span>'}</td>
+      ${can("ASSUREUR") ? `<td><div class="row-actions">${
+        m.etat === "Désactivé"
+          ? '<span class="cell-muted">—</span>'
+          : `<button class="btn btn-danger btn-sm" data-act="desactiver-medecin" data-id="${m.id}">Désactiver</button>`
+      }</div></td>` : ""}
     </tr>`
   );
   $("#page-content").innerHTML = tablePanel({
@@ -851,10 +857,11 @@ Actions["delete-assure"] = async (id) => {
   Pages.assures();
 };
 
-Actions["delete-medecin"] = async (id) => {
-  if (!confirm("Voulez-vous vraiment supprimer ce médecin ?")) return;
-  await API.delete(`/medecins/${id}`);
-  toast("Médecin supprimé.", "ok");
+// CU 11 : Desactiver un medecin (il ne pourra plus se connecter ni exercer)
+Actions["desactiver-medecin"] = async (id) => {
+  if (!confirm("Désactiver ce médecin ? Il ne pourra plus se connecter ni exercer.")) return;
+  await API.put(`/medecins/${id}/desactiver`);
+  toast("Médecin désactivé.", "ok");
   Pages.medecins();
 };
 

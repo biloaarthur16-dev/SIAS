@@ -23,6 +23,12 @@ export function auth(req, res, next) {
   const sessions = getSessions();
   const session = token ? sessions[token] : null;
   if (!session) return res.status(401).json({ error: "Authentification requise." });
+  // CU 11 : bloque une session ouverte si le medecin a ete desactive entre-temps.
+  if (session.role === "MEDECIN") {
+    const med = findById("medecins", session.id);
+    if (med && med.etat === "Désactivé")
+      return res.status(403).json({ error: "Compte desactive : acces refuse." });
+  }
   req.user = session;
   next();
 }

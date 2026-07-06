@@ -70,18 +70,17 @@ router.post("/", auth, requireRole("ASSUREUR"), (req, res) => {
   res.status(201).json({ ...publicUser(medecin), motDePasseParDefaut: plainPassword });
 });
 
-router.delete("/:id", auth, requireRole("ASSUREUR"), (req, res) => {
-  const t = table("medecins");
-  const idx = t.findIndex(m => m.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ error: "Medecin introuvable." });
+// CU 11 : Desactiver un medecin (transition d'etat Actif -> Desactive, reversible cote metier).
+// Un medecin desactive ne peut plus s'authentifier ni exercer (voir garde dans utils.auth).
+router.put("/:id/desactiver", auth, requireRole("ASSUREUR"), (req, res) => {
+  const medecin = findById("medecins", req.params.id);
+  if (!medecin) return res.status(404).json({ error: "Medecin introuvable." });
+  if (medecin.etat === "Désactivé")
+    return res.status(409).json({ error: "Ce medecin est deja desactive." });
 
-  const assures = table("assures");
-  const assureIdx = assures.findIndex(a => a.isMedecin && a.medecinId === req.params.id);
-  if (assureIdx !== -1) assures.splice(assureIdx, 1);
-
-  t.splice(idx, 1);
+  medecin.etat = "Désactivé";
   save();
-  res.json({ ok: true });
+  res.json(publicUser(medecin));
 });
 
 export default router;
