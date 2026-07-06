@@ -196,12 +196,12 @@ function enterApp() {
 // ===========================================================================
 const NAV = [
   { id: "dashboard", label: "Tableau de bord", ico: "▦", sub: "Vue d'ensemble de l'activité", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "assures", label: "Assurés", ico: "👤", sub: "Patients enregistrés dans le système", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "medecins", label: "Médecins", ico: "🩺", sub: "Généralistes et spécialistes", roles: ["ASSUREUR"] },
-  { id: "consultations", label: "Consultations", ico: "📅", sub: "Rendez-vous médicaux", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "feuilles", label: "Feuilles de maladie", ico: "📋", sub: "Documents de soins à rembourser", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "prescriptions", label: "Prescriptions", ico: "💊", sub: "Médicaments et consultations spécialisées", roles: ["MEDECIN"] },
-  { id: "remboursements", label: "Remboursements", ico: "💳", sub: "Traitement et factures", roles: ["ASSUREUR"] },
+  { id: "assures", label: "Assurés", ico: "user", sub: "Patients enregistrés dans le système", roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "medecins", label: "Médecins", ico: "stethoscope", sub: "Généralistes et spécialistes", roles: ["ASSUREUR"] },
+  { id: "consultations", label: "Consultations", ico: "calendar", sub: "Rendez-vous médicaux", roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "feuilles", label: "Feuilles de maladie", ico: "clipboard", sub: "Documents de soins à rembourser", roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "prescriptions", label: "Prescriptions", ico: "pill", sub: "Médicaments et consultations spécialisées", roles: ["MEDECIN"] },
+  { id: "remboursements", label: "Remboursements", ico: "card", sub: "Traitement et factures", roles: ["ASSUREUR"] },
 ];
 
 function buildNav() {
@@ -209,7 +209,7 @@ function buildNav() {
   nav.innerHTML = NAV.filter((n) => n.roles.includes(currentUser.role))
     .map(
       (n) => `<button class="nav-item" data-page="${n.id}">
-        <span class="nav-ico">${n.ico}</span><span>${esc(n.label)}</span></button>`
+        <span class="nav-ico">${icon(n.ico, 20)}</span><span>${esc(n.label)}</span></button>`
     )
     .join("");
   nav.querySelectorAll(".nav-item").forEach((btn) => {
@@ -238,7 +238,7 @@ function tablePanel({ title, sub, action, columns, rows, empty }) {
     </div>
     <div class="panel-body"><div class="table-wrap">
       ${rows.length === 0
-        ? `<div class="empty"><div class="big">📭</div>${esc(empty || "Aucune donnee.")}</div>`
+        ? `<div class="empty"><div class="big">${icon("inbox", 40)}</div>${esc(empty || "Aucune donnee.")}</div>`
         : `<table class="data"><thead><tr>${columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
            <tbody>${rows.join("")}</tbody></table>`}
     </div></div></div>`;
@@ -254,20 +254,22 @@ const Pages = {};
 // ----------------------------- Tableau de bord -----------------------------
 Pages.dashboard = async () => {
   const stats = await API.get("/stats");
-  const statCard = (label, value, ico, sub) => `<div class="stat-card"><div class="label">${esc(label)}</div>
+  const statCard = (label, value, ico, sub) => `<div class="stat-card">
+        <div class="stat-ico">${icon(ico, 22)}</div>
+        <div class="label">${esc(label)}</div>
         <div class="value">${typeof value === "number" ? value : esc(value)}</div>
         ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>`;
 
   const cards = [
-    statCard("Assurés", stats.assures, "👤", "Total inscrits"),
-    statCard("Médecins", stats.medecins, "⚕️", "Actifs"),
-    statCard("Consultations", stats.consultations, "🩺", "Réalisées"),
-    statCard("Feuilles", stats.feuilles, "📄", `${stats.feuillesEnregistrees} enregistrées`),
+    statCard("Assurés", stats.assures, "user", "Total inscrits"),
+    statCard("Médecins", stats.medecins, "stethoscope", "Actifs"),
+    statCard("Consultations", stats.consultations, "calendar", "Réalisées"),
+    statCard("Feuilles", stats.feuilles, "file", `${stats.feuillesEnregistrees} enregistrées`),
   ];
   if (can("ASSUREUR")) {
     cards.push(
-      statCard("Remboursements", stats.remboursements, "💳", "Effectués"),
-      statCard("Total remboursé", money(stats.montantTotalRembourse), "💰", "Dépenses")
+      statCard("Remboursements", stats.remboursements, "card", "Effectués"),
+      statCard("Total remboursé", money(stats.montantTotalRembourse), "money", "Dépenses")
     );
   }
 
@@ -374,11 +376,11 @@ Pages.assures = async () => {
       <td>${esc(a.email)}<div class="cell-muted">${esc(a.tel || "")}</div></td>
       <td>${esc(a.profession || "-")}</td>
       <td>${a.groupeSanguin ? `<span class="pill">${esc(a.groupeSanguin)}</span>` : "-"}</td>
-      <td>${a.allergies ? `<span class="badge badge-red" title="${esc(a.allergies)}">⚠ ${esc(a.allergies.length > 22 ? a.allergies.slice(0, 22) + '...' : a.allergies)}</span>` : '<span class="cell-muted">Aucune</span>'}</td>
+      <td>${a.allergies ? `<span class="badge badge-red" title="${esc(a.allergies)}">${icon("alert", 13)} ${esc(a.allergies.length > 22 ? a.allergies.slice(0, 22) + '...' : a.allergies)}</span>` : '<span class="cell-muted">Aucune</span>'}</td>
       <td>${a.medecinTraitant ? esc(a.medecinTraitant) : '<span class="badge badge-grey">Aucun</span>'}</td>
       <td><div class="row-actions">${can("ASSUREUR")
         ? `<button class="btn btn-soft btn-sm" data-act="med-traitant" data-id="${a.id}">Médecin traitant</button>
-           <button class="btn btn-danger btn-sm" data-act="delete-assure" data-id="${a.id}">🗑</button>`
+           <button class="btn btn-danger btn-sm" data-act="delete-assure" data-id="${a.id}" aria-label="Supprimer">${icon("delete", 16)}</button>`
         : ""}</div></td>
     </tr>`
   );
@@ -441,7 +443,7 @@ Pages.consultations = async () => {
       <td>${dt(c.date)}</td>
       <td>${esc(c.motif || "-")}</td>
       <td><span class="badge badge-blue">${esc(c.etat)}</span></td>
-      ${can("ASSUREUR") ? `<td><div class="row-actions"><button class="btn btn-danger btn-sm" data-act="delete-consultation" data-id="${c.id}">🗑</button></div></td>` : ""}
+      ${can("ASSUREUR") ? `<td><div class="row-actions"><button class="btn btn-danger btn-sm" data-act="delete-consultation" data-id="${c.id}" aria-label="Supprimer">${icon("delete", 16)}</button></div></td>` : ""}
     </tr>`
   );
   $("#page-content").innerHTML = tablePanel({
@@ -510,13 +512,13 @@ Pages.prescriptions = async () => {
     <div class="panel-head">
       <div><h3>Prescriptions</h3><p>Emises lors d'une consultation</p></div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-soft" data-act="presc-medicament">💊 Prescrire medicament</button>
-        <button class="btn btn-primary" data-act="presc-consultation">🩺 Prescrire consultation</button>
+        <button class="btn btn-soft" data-act="presc-medicament">${icon("pill", 16)} Prescrire medicament</button>
+        <button class="btn btn-primary" data-act="presc-consultation">${icon("stethoscope", 16)} Prescrire consultation</button>
       </div>
     </div>
     <div class="panel-body"><div class="table-wrap">
       ${rows.length === 0
-        ? `<div class="empty"><div class="big">📭</div>Aucune prescription.</div>`
+        ? `<div class="empty"><div class="big">${icon("inbox", 40)}</div>Aucune prescription.</div>`
         : `<table class="data"><thead><tr><th>Reference</th><th>Type</th><th>Detail</th><th>Prix</th><th>Consultation</th><th>Date</th></tr></thead><tbody>${rows.join("")}</tbody></table>`}
     </div></div></div>`;
 };
@@ -533,7 +535,7 @@ Pages.remboursements = async () => {
       <td class="cell-strong">${money(r.montant)}</td>
       <td>${r.modePaiement === "VIREMENT" ? '<span class="badge badge-blue">Virement</span>' : '<span class="badge badge-grey">Especes</span>'}</td>
       <td><span class="badge badge-green">${esc(r.etat)}</span></td>
-      <td><div class="row-actions"><button class="btn btn-soft btn-sm" data-act="facture" data-id="${r.id}">🖨 Facture</button></div></td>
+      <td><div class="row-actions"><button class="btn btn-soft btn-sm" data-act="facture" data-id="${r.id}">${icon("printer", 15)} Facture</button></div></td>
     </tr>`
   );
   $("#page-content").innerHTML = tablePanel({
@@ -843,7 +845,7 @@ Actions["facture"] = async (id) => {
   </div>
   <div class="form-actions">
     <button class="btn btn-ghost" id="modal-cancel">Fermer</button>
-    <button class="btn btn-primary" onclick="window.print()">🖨 Imprimer</button>
+    <button class="btn btn-primary" onclick="window.print()">${icon("printer", 16)} Imprimer</button>
   </div>`;
   openModal("Facture de remboursement", html);
   $("#modal-cancel").addEventListener("click", closeModal);
