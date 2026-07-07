@@ -19,10 +19,13 @@ router.post("/", auth, requireRole("MEDECIN", "ASSUREUR"), async (req, res, next
 
     if (!assureId || !medecinId)
       return res.status(400).json({ error: "Assure et medecin sont obligatoires." });
-    if (!(await get("assures", assureId)))
+    const assure = await get("assures", assureId);
+    if (!assure)
       return res.status(404).json({ error: "Assure introuvable." });
     if (!(await get("medecins", medecinId)))
       return res.status(404).json({ error: "Medecin introuvable." });
+    if (assure.medecinId === medecinId)
+      return res.status(400).json({ error: "Un medecin ne peut pas se consulter lui-meme." });
 
     const consultation = await insert("consultations", {
       id: await nextId("CONS"),

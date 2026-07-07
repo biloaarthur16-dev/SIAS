@@ -693,9 +693,12 @@ Actions["add-specialite"] = () => {
 // Nouvelle consultation
 Actions["add-consultation"] = async () => {
   const [assures, medecins] = await Promise.all([API.get("/assures"), API.get("/medecins")]);
+  const selectableAssures = can("MEDECIN")
+    ? assures.filter((a) => a.medecinId !== currentUser.id)
+    : assures;
   const fields = [
     { name: "assureId", label: "Assuré", type: "select", required: true, placeholder: "Choisir un assuré",
-      options: assures.map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` })) },
+      options: selectableAssures.map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` })) },
   ];
   if (!can("MEDECIN")) {
     fields.push({ name: "medecinId", label: "Médecin", type: "select", required: true, placeholder: "Choisir un médecin",
