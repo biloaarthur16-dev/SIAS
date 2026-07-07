@@ -71,6 +71,8 @@ router.put("/:id/medecin-traitant", auth, requireRole("ASSUREUR"), async (req, r
     const { medecinId } = req.body || {};
     const medecin = await get("medecins", medecinId);
     if (!medecin) return res.status(404).json({ error: "Medecin introuvable." });
+    if (medecin.type !== "GENERALISTE")
+      return res.status(400).json({ error: "Un specialiste ne peut pas etre medecin traitant." });
 
     const deja = !!assure.medecinTraitantId;
     const updated = await update("assures", req.params.id, { medecinTraitantId: medecinId });

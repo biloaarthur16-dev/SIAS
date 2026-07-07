@@ -79,4 +79,17 @@ router.put("/:id/desactiver", auth, requireRole("ASSUREUR"), async (req, res, ne
   } catch (err) { next(err); }
 });
 
+// CU 11bis : Reactiver un medecin (transition d'etat Desactive -> Actif).
+router.put("/:id/activer", auth, requireRole("ASSUREUR"), async (req, res, next) => {
+  try {
+    const medecin = await get("medecins", req.params.id);
+    if (!medecin) return res.status(404).json({ error: "Medecin introuvable." });
+    if (medecin.etat !== "Désactivé")
+      return res.status(409).json({ error: "Ce medecin est deja actif." });
+
+    const updated = await update("medecins", req.params.id, { etat: "Actif" });
+    res.json(publicUser(updated));
+  } catch (err) { next(err); }
+});
+
 export default router;

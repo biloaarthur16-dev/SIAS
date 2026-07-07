@@ -99,25 +99,7 @@ router.post("/remboursements", auth, requireRole("ASSUREUR"), async (req, res, n
     const mode = modePaiement === "ESPECES" ? "ESPECES" : "VIREMENT";
     const medecin = await get("medecins", feuille.medecinId);
 
-    let taux = 80;
-    if (medecin && medecin.type === "GENERALISTE") {
-      taux = 100;
-    } else {
-      const specialiteMedecin = medecin ? medecin.specialite : null;
-      const [prescriptions, consultations] = await Promise.all([all("prescriptions"), all("consultations")]);
-      const consById = new Map(consultations.map((c) => [c.id, c]));
-      const orientation = prescriptions.find((p) => {
-        if (p.type !== "CONSULTATION") return false;
-        const cons = consById.get(p.consultationId);
-        if (!cons || cons.assureId !== feuille.assureId) return false;
-        const cibleMedecin = p.specialisteId === feuille.medecinId;
-        const cibleSpecialite =
-          specialiteMedecin && p.specialiteRecommandee &&
-          p.specialiteRecommandee.toLowerCase() === specialiteMedecin.toLowerCase();
-        return cibleMedecin || cibleSpecialite;
-      });
-      if (!orientation) taux = 30;
-    }
+    const taux = medecin && medecin.type === "GENERALISTE" ? 100 : 80;
 
     const montant = Math.round((feuille.montantSoins * taux) / 100);
     const now = new Date().toISOString();

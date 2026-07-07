@@ -31,15 +31,15 @@ test("CU7: généraliste feuille reimbursed at 100%", async () => {
   assert.equal(r.body.modePaiement, "ESPECES");
 });
 
-test("CU7: spécialiste WITHOUT orientation reimbursed at 30%", async () => {
+test("CU7: spécialiste reimbursed at 80% (no orientation needed)", async () => {
   const id = await registeredFeuille(nzoyem, TANZI, 20000);
   const r = await srv.api.post("/remboursements", { feuilleId: id, modePaiement: "VIREMENT" }, { token: admin });
   assert.equal(r.status, 201);
-  assert.equal(r.body.taux, 30);
-  assert.equal(r.body.montant, 6000);
+  assert.equal(r.body.taux, 80);
+  assert.equal(r.body.montant, 16000);
 });
 
-test("CU7: spécialiste WITH orientation reimbursed at 80%", async () => {
+test("CU7: spécialiste reimbursed at 80% even with an orientation on file", async () => {
   // Généraliste consults Philippe and orients him to the specialist Nzoyem.
   const c = await srv.api.post("/consultations", { assureId: PHILIPPE }, { token: owen });
   await srv.api.post("/prescriptions/consultation",

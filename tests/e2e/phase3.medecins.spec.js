@@ -50,6 +50,28 @@ test("CU11: desactiver a medecin flips its badge and removes the action", async 
     .locator('[data-act="desactiver-medecin"]')).toHaveCount(0);
 });
 
+test("CU11bis: activer a deactivated medecin flips its badge back and restores login", async ({ page }) => {
+  await uiLogin(page, "admin", "admin123");
+  page.on("dialog", (d) => d.accept());
+  const login = "jetable" + Date.now();
+  const name = await createDisposableMedecin(page, { login, password: "temp123" });
+
+  const row = page.locator("table.data tbody tr", { hasText: name });
+  await row.locator('[data-act="desactiver-medecin"]').click();
+  await expect(row.locator(".badge-grey")).toHaveText("Désactivé");
+
+  await row.locator('[data-act="activer-medecin"]').click();
+  await expect(row.locator(".badge-green")).toHaveText("Actif");
+  await expect(row.locator('[data-act="activer-medecin"]')).toHaveCount(0);
+  await expect(row.locator('[data-act="desactiver-medecin"]')).toHaveCount(1);
+
+  await page.locator("#logout-btn").click();
+  await page.locator("#login-input").fill(login);
+  await page.locator("#password-input").fill("temp123");
+  await page.locator("#login-form button[type=submit]").click();
+  await expect(page.locator("#app-view")).toBeVisible();
+});
+
 test("CU11 guard: a deactivated medecin can no longer log in via the UI", async ({ page }) => {
   await uiLogin(page, "admin", "admin123");
   page.on("dialog", (d) => d.accept());

@@ -195,21 +195,33 @@ function enterApp() {
 //  NAVIGATION
 // ===========================================================================
 const NAV = [
-  { id: "dashboard", label: "Tableau de bord", ico: "▦", sub: "Vue d'ensemble de l'activité", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "assures", label: "Assurés", ico: "user", sub: "Patients enregistrés dans le système", roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "dashboard", label: "Tableau de bord", ico: "▦", sub: "Vue d'ensemble de l'activité",
+    subByRole: { MEDECIN: "Vue d'ensemble de vos patients et consultations" },
+    roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "assures", label: "Assurés", labelByRole: { MEDECIN: "Mes patients" }, ico: "user",
+    sub: "Patients enregistrés dans le système",
+    subByRole: { MEDECIN: "Patients que vous suivez ou avez consultés" },
+    roles: ["ASSUREUR", "MEDECIN"] },
   { id: "medecins", label: "Médecins", ico: "stethoscope", sub: "Généralistes et spécialistes", roles: ["ASSUREUR"] },
-  { id: "consultations", label: "Consultations", ico: "calendar", sub: "Rendez-vous médicaux", roles: ["ASSUREUR", "MEDECIN"] },
-  { id: "feuilles", label: "Feuilles de maladie", ico: "clipboard", sub: "Documents de soins à rembourser", roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "consultations", label: "Consultations", ico: "calendar", sub: "Rendez-vous médicaux",
+    subByRole: { MEDECIN: "Vos rendez-vous avec vos patients" },
+    roles: ["ASSUREUR", "MEDECIN"] },
+  { id: "feuilles", label: "Feuilles de maladie", ico: "clipboard", sub: "Documents de soins à rembourser",
+    subByRole: { MEDECIN: "Vos documents de soins à rembourser" },
+    roles: ["ASSUREUR", "MEDECIN"] },
   { id: "prescriptions", label: "Prescriptions", ico: "pill", sub: "Médicaments et consultations spécialisées", roles: ["MEDECIN"] },
   { id: "remboursements", label: "Remboursements", ico: "card", sub: "Traitement et factures", roles: ["ASSUREUR"] },
 ];
+
+const navLabel = (n) => (n.labelByRole && n.labelByRole[currentUser.role]) || n.label;
+const navSub = (n) => (n.subByRole && n.subByRole[currentUser.role]) || n.sub;
 
 function buildNav() {
   const nav = $("#main-nav");
   nav.innerHTML = NAV.filter((n) => n.roles.includes(currentUser.role))
     .map(
       (n) => `<button class="nav-item" data-page="${n.id}">
-        <span class="nav-ico">${icon(n.ico, 20)}</span><span>${esc(n.label)}</span></button>`
+        <span class="nav-ico">${icon(n.ico, 20)}</span><span>${esc(navLabel(n))}</span></button>`
     )
     .join("");
   nav.querySelectorAll(".nav-item").forEach((btn) => {
@@ -220,8 +232,8 @@ function buildNav() {
 function navigate(page) {
   currentPage = page;
   const meta = NAV.find((n) => n.id === page);
-  $("#page-title").textContent = meta ? meta.label : "";
-  $("#page-subtitle").textContent = meta ? meta.sub : "";
+  $("#page-title").textContent = meta ? navLabel(meta) : "";
+  $("#page-subtitle").textContent = meta ? navSub(meta) : "";
   document.querySelectorAll(".nav-item").forEach((b) =>
     b.classList.toggle("active", b.dataset.page === page)
   );
@@ -260,37 +272,52 @@ Pages.dashboard = async () => {
         <div class="value">${typeof value === "number" ? value : esc(value)}</div>
         ${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>`;
 
+  // Le medecin a son propre tableau de bord, centre sur ses patients, distinct de celui de l'assureur.
+  if (can("MEDECIN")) {
+    const cards = [
+      statCard("Mes patients", stats.assures, "user", "Suivis ou consultés"),
+      statCard("Mes consultations", stats.consultations, "calendar", "Réalisées"),
+      statCard("Mes feuilles", stats.feuilles, "file", `${stats.feuillesEnregistrees} enregistrées`),
+    ];
+    const guideMedecin = `
+      <ul class="timeline">
+        <li><div><div class="ev-name">1. Enregistrer une consultation</div><div class="ev-meta">Menu Consultations &rarr; Nouvelle consultation</div></div></li>
+        <li><div><div class="ev-name">2. Prescrire medicaments / consultation specialisee</div><div class="ev-meta">Menu Prescriptions</div></div></li>
+        <li><div><div class="ev-name">3. Enregistrer la feuille de maladie</div><div class="ev-meta">Menu Feuilles &rarr; Nouvelle feuille (montant des soins + diagnostic)</div></div></li>
+      </ul>`;
+
+    $("#page-content").innerHTML = `
+      <div class="page-header">
+        <div><h2 class="page-title">Mon espace médecin</h2><p class="page-sub">Vue d'ensemble de vos patients et de votre activité</p></div>
+      </div>
+      <div class="dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">${cards.join("")}</div>
+      <div class="panel" style="margin-top: 2rem;">
+        <div class="panel-head"><h3>Guide Rapide (Medecin)</h3></div>
+        <div class="panel-body" style="padding:20px 24px">${guideMedecin}</div>
+      </div>
+    `;
+    return;
+  }
+
   const cards = [
     statCard("Assurés", stats.assures, "user", "Total inscrits"),
     statCard("Médecins", stats.medecins, "stethoscope", "Actifs"),
     statCard("Consultations", stats.consultations, "calendar", "Réalisées"),
     statCard("Feuilles", stats.feuilles, "file", `${stats.feuillesEnregistrees} enregistrées`),
+    statCard("Remboursements", stats.remboursements, "card", "Effectués"),
+    statCard("Total remboursé", money(stats.montantTotalRembourse), "money", "Dépenses"),
   ];
-  if (can("ASSUREUR")) {
-    cards.push(
-      statCard("Remboursements", stats.remboursements, "card", "Effectués"),
-      statCard("Total remboursé", money(stats.montantTotalRembourse), "money", "Dépenses")
-    );
-  }
 
   const guideAssureur = `
     <ul class="timeline">
       <li><div><div class="ev-name">1. Inscrire un assure</div><div class="ev-meta">Menu Assures &rarr; Inscrire un assure</div></div></li>
       <li><div><div class="ev-name">2. Attribuer un medecin traitant</div><div class="ev-meta">Menu Assures &rarr; bouton Medecin traitant</div></div></li>
       <li><div><div class="ev-name">3. Completer la feuille de maladie</div><div class="ev-meta">Menu Feuilles &rarr; Completer (passe a "Enregistree")</div></div></li>
-      <li><div><div class="ev-name">4. Effectuer le remboursement</div><div class="ev-meta">100% généraliste / 80% spécialiste (avec ordonnance d'orientation) / 30% sans parcours</div></div></li>
+      <li><div><div class="ev-name">4. Effectuer le remboursement</div><div class="ev-meta">100% généraliste / 80% spécialiste</div></div></li>
       <li><div><div class="ev-name">5. Imprimer la facture</div><div class="ev-meta">Menu Remboursements &rarr; Facture</div></div></li>
     </ul>`;
-  const guideMedecin = `
-    <ul class="timeline">
-      <li><div><div class="ev-name">1. Enregistrer une consultation</div><div class="ev-meta">Menu Consultations &rarr; Nouvelle consultation</div></div></li>
-      <li><div><div class="ev-name">2. Prescrire medicaments / consultation specialisee</div><div class="ev-meta">Menu Prescriptions</div></div></li>
-      <li><div><div class="ev-name">3. Enregistrer la feuille de maladie</div><div class="ev-meta">Menu Feuilles &rarr; Nouvelle feuille (montant des soins + diagnostic)</div></div></li>
-    </ul>`;
 
-  let chartsHtml = "";
-  if (can("ASSUREUR")) {
-    chartsHtml = `
+  const chartsHtml = `
       <div class="charts-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px;">
         <div class="panel" style="padding: 20px;">
           <h3 style="margin-top:0;">Répartition des Médecins</h3>
@@ -306,7 +333,6 @@ Pages.dashboard = async () => {
         </div>
       </div>
     `;
-  }
 
   $("#page-content").innerHTML = `
     <div class="page-header">
@@ -315,13 +341,13 @@ Pages.dashboard = async () => {
     <div class="dashboard-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">${cards.join("")}</div>
     ${chartsHtml}
     <div class="panel" style="margin-top: 2rem;">
-      <div class="panel-head"><h3>Guide Rapide (${can("ASSUREUR") ? "Assureur" : "Medecin"})</h3></div>
-      <div class="panel-body" style="padding:20px 24px">${can("ASSUREUR") ? guideAssureur : guideMedecin}</div>
+      <div class="panel-head"><h3>Guide Rapide (Assureur)</h3></div>
+      <div class="panel-body" style="padding:20px 24px">${guideAssureur}</div>
     </div>
   `;
 
-  // Render charts if Chart.js is loaded and we are an Assureur
-  if (can("ASSUREUR") && window.Chart) {
+  // Render charts if Chart.js is loaded
+  if (window.Chart) {
     try {
       const specsData = await API.get("/medecins");
       const genCount = specsData.filter(m => m.type === "GENERALISTE").length;
@@ -366,7 +392,19 @@ Pages.dashboard = async () => {
 
 // ----------------------------- Assures -------------------------------------
 Pages.assures = async () => {
-  const assures = await API.get("/assures");
+  let assures = await API.get("/assures");
+  // Un medecin ne voit que ses propres patients (dont il est le medecin traitant,
+  // ou qu'il a deja consultes / pour qui il a rempli une feuille) : pas la liste
+  // complete reservee a l'assureur.
+  if (can("MEDECIN")) {
+    const [consultations, feuilles] = await Promise.all([API.get("/consultations"), API.get("/feuilles")]);
+    const mesPatients = new Set([
+      ...assures.filter((a) => a.medecinTraitantId === currentUser.id).map((a) => a.id),
+      ...consultations.map((c) => c.assureId),
+      ...feuilles.map((f) => f.assureId),
+    ]);
+    assures = assures.filter((a) => mesPatients.has(a.id));
+  }
   const action = can("ASSUREUR")
     ? `<button class="btn btn-primary" data-act="add-assure">+ Inscrire un assuré</button>`
     : "";
@@ -385,12 +423,12 @@ Pages.assures = async () => {
     </tr>`
   );
   $("#page-content").innerHTML = tablePanel({
-    title: "Assurés",
-    sub: "Liste des patients bénéficiaires",
+    title: can("MEDECIN") ? "Mes patients" : "Assurés",
+    sub: can("MEDECIN") ? "Patients que vous suivez ou avez consultés" : "Liste des patients bénéficiaires",
     action,
     columns: ["Assuré", "Contact", "Profession", "Groupe", "Allergies", "Médecin traitant", ""],
     rows,
-    empty: "Aucun assuré enregistré.",
+    empty: can("MEDECIN") ? "Aucun patient suivi pour le moment." : "Aucun assuré enregistré.",
   });
 };
 
@@ -417,14 +455,14 @@ Pages.medecins = async () => {
         : '<span class="badge badge-green">Actif</span>'}</td>
       ${can("ASSUREUR") ? `<td><div class="row-actions">${
         m.etat === "Désactivé"
-          ? '<span class="cell-muted">—</span>'
+          ? `<button class="btn btn-soft btn-sm" data-act="activer-medecin" data-id="${m.id}">Activer</button>`
           : `<button class="btn btn-danger btn-sm" data-act="desactiver-medecin" data-id="${m.id}">Désactiver</button>`
       }</div></td>` : ""}
     </tr>`
   );
   $("#page-content").innerHTML = tablePanel({
     title: "Médecins",
-    sub: "Généralistes (remb. 100%) · Spécialistes (80% avec orientation / 30% sans parcours)",
+    sub: "Généralistes (remb. 100%) · Spécialistes (remb. 80%)",
     action,
     columns,
     rows,
@@ -540,7 +578,7 @@ Pages.remboursements = async () => {
   );
   $("#page-content").innerHTML = tablePanel({
     title: "Remboursements",
-    sub: "Généraliste 100% · Spécialiste 80% (avec orientation) / 30% (sans parcours de soins)",
+    sub: "Généraliste 100% · Spécialiste 80%",
     action: `<button class="btn btn-primary" data-act="effectuer-remb">+ Effectuer un remboursement</button>`,
     columns: ["Reference", "Assure", "Montant soins", "Taux", "Rembourse", "Mode", "Etat", ""],
     rows,
@@ -588,17 +626,18 @@ Actions["add-assure"] = () => {
 // CU 3 : Enregistrer medecin traitant
 Actions["med-traitant"] = async (id) => {
   const medecins = await API.get("/medecins");
+  const generalistes = medecins.filter((m) => m.type === "GENERALISTE" && m.etat !== "Désactivé");
   const assure = await API.get(`/assures/${id}`);
   openForm({
     title: `Medecin traitant - ${assure.prenom} ${assure.nom}`,
     submitLabel: "Associer",
     fields: [
-      { name: "medecinId", label: "Selectionner un medecin", type: "select", required: true, full: true,
+      { name: "medecinId", label: "Selectionner un medecin generaliste", type: "select", required: true, full: true,
         value: assure.medecinTraitantId || "",
         placeholder: "Choisir un medecin",
-        options: medecins.map((m) => ({
+        options: generalistes.map((m) => ({
           value: m.id,
-          label: `${m.prenom} ${m.nom} - ${m.type === "GENERALISTE" ? "Generaliste" : "Specialiste " + (m.specialite || "")}`,
+          label: `${m.prenom} ${m.nom} - Generaliste`,
         })) },
     ],
     onSubmit: async (v) => {
@@ -796,7 +835,7 @@ Actions["effectuer-remb"] = async () => {
       { name: "feuilleId", label: "Feuille de maladie", type: "select", required: true, placeholder: "Choisir",
         options: eligibles.map((f) => ({
           value: f.id,
-          label: `${f.id} - ${f.assure} - ${money(f.montantSoins)} (${f.medecinType === "GENERALISTE" ? "100% remb." : "80% avec orientation / 30% sans"})`,
+          label: `${f.id} - ${f.assure} - ${money(f.montantSoins)} (${f.medecinType === "GENERALISTE" ? "100% remb." : "80% remb."})`,
         })) },
       { name: "modePaiement", label: "Mode de remboursement", type: "select", required: true,
         options: [{ value: "VIREMENT", label: "Virement bancaire" }, { value: "ESPECES", label: "Especes" }] },
@@ -864,6 +903,13 @@ Actions["desactiver-medecin"] = async (id) => {
   if (!confirm("Désactiver ce médecin ? Il ne pourra plus se connecter ni exercer.")) return;
   await API.put(`/medecins/${id}/desactiver`);
   toast("Médecin désactivé.", "ok");
+  Pages.medecins();
+};
+
+// CU 11bis : Reactiver un medecin desactive
+Actions["activer-medecin"] = async (id) => {
+  await API.put(`/medecins/${id}/activer`);
+  toast("Médecin réactivé.", "ok");
   Pages.medecins();
 };
 

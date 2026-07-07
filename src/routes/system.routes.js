@@ -6,6 +6,25 @@ const router = express.Router();
 
 router.get("/stats", auth, async (req, res, next) => {
   try {
+    if (req.user.role === "MEDECIN") {
+      const [assures, consultations, feuilles] = await Promise.all([
+        all("assures"), all("consultations"), all("feuilles"),
+      ]);
+      const mesConsultations = consultations.filter((c) => c.medecinId === req.user.id);
+      const mesFeuilles = feuilles.filter((f) => f.medecinId === req.user.id);
+      const mesPatients = new Set([
+        ...assures.filter((a) => a.medecinTraitantId === req.user.id).map((a) => a.id),
+        ...mesConsultations.map((c) => c.assureId),
+        ...mesFeuilles.map((f) => f.assureId),
+      ]);
+      return res.json({
+        assures: mesPatients.size,
+        consultations: mesConsultations.length,
+        feuilles: mesFeuilles.length,
+        feuillesEnregistrees: mesFeuilles.filter((f) => f.etat === "ENREGISTREE").length,
+      });
+    }
+
     const [assures, medecins, consultations, feuilles, remb] = await Promise.all([
       all("assures"), all("medecins"), all("consultations"), all("feuilles"), all("remboursements"),
     ]);

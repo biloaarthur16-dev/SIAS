@@ -77,3 +77,27 @@ test("CU11 guard: deactivating mid-session blocks the medecin's active token -> 
   const blocked = await srv.api.get("/consultations", { token: medToken });
   assert.equal(blocked.status, 403);
 });
+
+test("CU11bis: activer flips etat back to Actif and login works again", async () => {
+  const { r, login: lg, password } = await createMedecin();
+  const id = r.body.id;
+  await srv.api.put(`/medecins/${id}/desactiver`, {}, { token });
+
+  const a = await srv.api.put(`/medecins/${id}/activer`, {}, { token });
+  assert.equal(a.status, 200);
+  assert.equal(a.body.etat, "Actif");
+
+  const attempt = await srv.api.post("/auth/login", { login: lg, password });
+  assert.equal(attempt.status, 200);
+});
+
+test("CU11bis alt: activer an already-active medecin -> 409", async () => {
+  const { r } = await createMedecin();
+  const again = await srv.api.put(`/medecins/${r.body.id}/activer`, {}, { token });
+  assert.equal(again.status, 409);
+});
+
+test("CU11bis alt: activer an unknown medecin -> 404", async () => {
+  const r = await srv.api.put("/medecins/MED-inexistant/activer", {}, { token });
+  assert.equal(r.status, 404);
+});
